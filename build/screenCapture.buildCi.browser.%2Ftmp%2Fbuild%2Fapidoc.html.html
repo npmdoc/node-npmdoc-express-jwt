@@ -1,4 +1,4 @@
-<div class="apidocDiv">
+<html><head></head><body><div class="apidocDiv">
 <style>
 /*csslint
 */
@@ -47,17 +47,10 @@
 }
 </style>
 <h1>api documentation for
-    <a
-
-        href="https://github.com/auth0/express-jwt#readme"
-
-    >express-jwt (v5.3.0)</a>
+    <a href="https://github.com/auth0/express-jwt#readme">express-jwt (v5.3.0)</a>
 </h1>
 <h4>JWT authentication middleware.</h4>
-<div class="apidocSectionDiv"><a
-    href="#apidoc.tableOfContents"
-    id="apidoc.tableOfContents"
-><h1>table of contents</h1></a><ol>
+<div class="apidocSectionDiv"><a href="#apidoc.tableOfContents" id="apidoc.tableOfContents"><h1>table of contents</h1></a><ol>
 
     <li class="apidocModuleLi"><a href="#apidoc.module.express-jwt">module express-jwt</a><ol>
 
@@ -127,7 +120,7 @@
     </h2>
     <ul>
     <li>description and source-code<pre class="apidocCodePre">express-jwt = function (options) {
-  if (!options || !options.secret) throw new Error(&#x27;secret should be set&#x27;);
+  if (!options || !options.secret) throw new Error('secret should be set');
 
   var secretCallback = options.secret;
 
@@ -137,32 +130,32 @@
 
   var isRevokedCallback = options.isRevoked || DEFAULT_REVOKED_FUNCTION;
 
-  var _requestProperty = options.userProperty || options.requestProperty || &#x27;user&#x27;;
+  var _requestProperty = options.userProperty || options.requestProperty || 'user';
   var _resultProperty = options.resultProperty;
-  var credentialsRequired = typeof options.credentialsRequired === &#x27;undefined&#x27; ? true : options.credentialsRequired;
+  var credentialsRequired = typeof options.credentialsRequired === 'undefined' ? true : options.credentialsRequired;
 
   var middleware = function(req, res, next) {
     var token;
 
-    if (req.method === &#x27;OPTIONS&#x27; &#x26;&#x26; req.headers.hasOwnProperty(&#x27;access-control-request-headers&#x27;)) {
-      var hasAuthInAccessControl = !!~req.headers[&#x27;access-control-request-headers&#x27;]
-                                    .split(&#x27;,&#x27;).map(function (header) {
+    if (req.method === 'OPTIONS' &amp;&amp; req.headers.hasOwnProperty('access-control-request-headers')) {
+      var hasAuthInAccessControl = !!~req.headers['access-control-request-headers']
+                                    .split(',').map(function (header) {
                                       return header.trim();
-                                    }).indexOf(&#x27;authorization&#x27;);
+                                    }).indexOf('authorization');
 
       if (hasAuthInAccessControl) {
         return next();
       }
     }
 
-    if (options.getToken &#x26;&#x26; typeof options.getToken === &#x27;function&#x27;) {
+    if (options.getToken &amp;&amp; typeof options.getToken === 'function') {
       try {
         token = options.getToken(req);
       } catch (e) {
         return next(e);
       }
-    } else if (req.headers &#x26;&#x26; req.headers.authorization) {
-      var parts = req.headers.authorization.split(&#x27; &#x27;);
+    } else if (req.headers &amp;&amp; req.headers.authorization) {
+      var parts = req.headers.authorization.split(' ');
       if (parts.length == 2) {
         var scheme = parts[0];
         var credentials = parts[1];
@@ -171,19 +164,19 @@
           token = credentials;
         } else {
           if (credentialsRequired) {
-            return next(new UnauthorizedError(&#x27;credentials_bad_scheme&#x27;, { message: &#x27;Format is Authorization: Bearer [token]&#x27; }));
+            return next(new UnauthorizedError('credentials_bad_scheme', { message: 'Format is Authorization: Bearer [token]' }));
           } else {
             return next();
           }
         }
       } else {
-        return next(new UnauthorizedError(&#x27;credentials_bad_format&#x27;, { message: &#x27;Format is Authorization: Bearer [token]&#x27; }));
+        return next(new UnauthorizedError('credentials_bad_format', { message: 'Format is Authorization: Bearer [token]' }));
       }
     }
 
     if (!token) {
       if (credentialsRequired) {
-        return next(new UnauthorizedError(&#x27;credentials_required&#x27;, { message: &#x27;No authorization token was found&#x27; }));
+        return next(new UnauthorizedError('credentials_required', { message: 'No authorization token was found' }));
       } else {
         return next();
       }
@@ -194,7 +187,7 @@
     try {
       dtoken = jwt.decode(token, { complete: true }) || {};
     } catch (err) {
-      return next(new UnauthorizedError(&#x27;invalid_token&#x27;, err));
+      return next(new UnauthorizedError('invalid_token', err));
     }
 
     async.waterfall([
@@ -209,7 +202,7 @@
       function verifyToken(secret, callback) {
         jwt.verify(token, secret, options, function(err, decoded) {
           if (err) {
-            callback(new UnauthorizedError(&#x27;invalid_token&#x27;, err));
+            callback(new UnauthorizedError('invalid_token', err));
           } else {
             callback(null, decoded);
           }
@@ -221,7 +214,7 @@
             callback(err);
           }
           else if (revoked) {
-            callback(new UnauthorizedError(&#x27;revoked_token&#x27;, {message: &#x27;The token has been revoked.&#x27;}));
+            callback(new UnauthorizedError('revoked_token', {message: 'The token has been revoked.'}));
           } else {
             callback(null, decoded);
           }
@@ -257,7 +250,7 @@
     </h2>
     <ul>
     <li>description and source-code<pre class="apidocCodePre">function UnauthorizedError(code, error) {
-  this.name = &#x22;UnauthorizedError&#x22;;
+  this.name = "UnauthorizedError";
   this.message = error.message;
   Error.call(this, error.message);
   Error.captureStackTrace(this, this.constructor);
@@ -285,7 +278,7 @@
     </h2>
     <ul>
     <li>description and source-code<pre class="apidocCodePre">function UnauthorizedError(code, error) {
-  this.name = &#x22;UnauthorizedError&#x22;;
+  this.name = "UnauthorizedError";
   this.message = error.message;
   Error.call(this, error.message);
   Error.captureStackTrace(this, this.constructor);
@@ -311,7 +304,7 @@
     </h2>
     <ul>
     <li>description and source-code<pre class="apidocCodePre">function UnauthorizedError(code, error) {
-  this.name = &#x22;UnauthorizedError&#x22;;
+  this.name = "UnauthorizedError";
   this.message = error.message;
   Error.call(this, error.message);
   Error.captureStackTrace(this, this.constructor);
@@ -331,3 +324,4 @@
     ]
 </div>
 </div>
+</body></html>

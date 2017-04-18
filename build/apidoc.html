@@ -51,7 +51,7 @@
 
         href="https://github.com/auth0/express-jwt#readme"
 
-    >express-jwt (v5.1.0)</a>
+    >express-jwt (v5.3.0)</a>
 </h1>
 <h4>JWT authentication middleware.</h4>
 <div class="apidocSectionDiv"><a
@@ -61,12 +61,267 @@
 
     <li class="apidocModuleLi"><a href="#apidoc.module.express-jwt">module express-jwt</a><ol>
 
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.express-jwt.express-jwt">
+            function <span class="apidocSignatureSpan"></span>express-jwt
+            <span class="apidocSignatureSpan">(options)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.express-jwt.UnauthorizedError">
+            function <span class="apidocSignatureSpan">express-jwt.</span>UnauthorizedError
+            <span class="apidocSignatureSpan">(code, error)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <span class="apidocSignatureSpan">object <span class="apidocSignatureSpan">express-jwt.</span>UnauthorizedError.prototype</span>
+
+        </li>
+
+    </ol></li>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.express-jwt.UnauthorizedError">module express-jwt.UnauthorizedError</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.express-jwt.UnauthorizedError.UnauthorizedError">
+            function <span class="apidocSignatureSpan">express-jwt.</span>UnauthorizedError
+            <span class="apidocSignatureSpan">(code, error)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.express-jwt.UnauthorizedError.prototype">module express-jwt.UnauthorizedError.prototype</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.express-jwt.UnauthorizedError.prototype.constructor">
+            function <span class="apidocSignatureSpan">express-jwt.UnauthorizedError.prototype.</span>constructor
+            <span class="apidocSignatureSpan">(code, error)</span>
+            </a>
+
+        </li>
+
     </ol></li>
 
 </ol></div>
 
 <div class="apidocSectionDiv">
 <h1><a href="#apidoc.module.express-jwt" id="apidoc.module.express-jwt">module express-jwt</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.express-jwt.express-jwt" id="apidoc.element.express-jwt.express-jwt">
+        function <span class="apidocSignatureSpan"></span>express-jwt
+        <span class="apidocSignatureSpan">(options)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">express-jwt = function (options) {
+  if (!options || !options.secret) throw new Error(&#x27;secret should be set&#x27;);
+
+  var secretCallback = options.secret;
+
+  if (!isFunction(secretCallback)){
+    secretCallback = wrapStaticSecretInCallback(secretCallback);
+  }
+
+  var isRevokedCallback = options.isRevoked || DEFAULT_REVOKED_FUNCTION;
+
+  var _requestProperty = options.userProperty || options.requestProperty || &#x27;user&#x27;;
+  var _resultProperty = options.resultProperty;
+  var credentialsRequired = typeof options.credentialsRequired === &#x27;undefined&#x27; ? true : options.credentialsRequired;
+
+  var middleware = function(req, res, next) {
+    var token;
+
+    if (req.method === &#x27;OPTIONS&#x27; &#x26;&#x26; req.headers.hasOwnProperty(&#x27;access-control-request-headers&#x27;)) {
+      var hasAuthInAccessControl = !!~req.headers[&#x27;access-control-request-headers&#x27;]
+                                    .split(&#x27;,&#x27;).map(function (header) {
+                                      return header.trim();
+                                    }).indexOf(&#x27;authorization&#x27;);
+
+      if (hasAuthInAccessControl) {
+        return next();
+      }
+    }
+
+    if (options.getToken &#x26;&#x26; typeof options.getToken === &#x27;function&#x27;) {
+      try {
+        token = options.getToken(req);
+      } catch (e) {
+        return next(e);
+      }
+    } else if (req.headers &#x26;&#x26; req.headers.authorization) {
+      var parts = req.headers.authorization.split(&#x27; &#x27;);
+      if (parts.length == 2) {
+        var scheme = parts[0];
+        var credentials = parts[1];
+
+        if (/^Bearer$/i.test(scheme)) {
+          token = credentials;
+        } else {
+          if (credentialsRequired) {
+            return next(new UnauthorizedError(&#x27;credentials_bad_scheme&#x27;, { message: &#x27;Format is Authorization: Bearer [token]&#x27; }));
+          } else {
+            return next();
+          }
+        }
+      } else {
+        return next(new UnauthorizedError(&#x27;credentials_bad_format&#x27;, { message: &#x27;Format is Authorization: Bearer [token]&#x27; }));
+      }
+    }
+
+    if (!token) {
+      if (credentialsRequired) {
+        return next(new UnauthorizedError(&#x27;credentials_required&#x27;, { message: &#x27;No authorization token was found&#x27; }));
+      } else {
+        return next();
+      }
+    }
+
+    var dtoken;
+
+    try {
+      dtoken = jwt.decode(token, { complete: true }) || {};
+    } catch (err) {
+      return next(new UnauthorizedError(&#x27;invalid_token&#x27;, err));
+    }
+
+    async.waterfall([
+      function getSecret(callback){
+        var arity = secretCallback.length;
+        if (arity == 4) {
+          secretCallback(req, dtoken.header, dtoken.payload, callback);
+        } else { // arity == 3
+          secretCallback(req, dtoken.payload, callback);
+        }
+      },
+      function verifyToken(secret, callback) {
+        jwt.verify(token, secret, options, function(err, decoded) {
+          if (err) {
+            callback(new UnauthorizedError(&#x27;invalid_token&#x27;, err));
+          } else {
+            callback(null, decoded);
+          }
+        });
+      },
+      function checkRevoked(decoded, callback) {
+        isRevokedCallback(req, dtoken.payload, function (err, revoked) {
+          if (err) {
+            callback(err);
+          }
+          else if (revoked) {
+            callback(new UnauthorizedError(&#x27;revoked_token&#x27;, {message: &#x27;The token has been revoked.&#x27;}));
+          } else {
+            callback(null, decoded);
+          }
+        });
+      }
+
+    ], function (err, result){
+      if (err) { return next(err); }
+      if (_resultProperty) {
+        set(res, _resultProperty, result);
+      } else {
+        set(req, _requestProperty, result);
+      }
+      next();
+    });
+  };
+
+  middleware.unless = unless;
+  middleware.UnauthorizedError = UnauthorizedError;
+
+  return middleware;
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.express-jwt.UnauthorizedError" id="apidoc.element.express-jwt.UnauthorizedError">
+        function <span class="apidocSignatureSpan">express-jwt.</span>UnauthorizedError
+        <span class="apidocSignatureSpan">(code, error)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function UnauthorizedError(code, error) {
+  this.name = &#x22;UnauthorizedError&#x22;;
+  this.message = error.message;
+  Error.call(this, error.message);
+  Error.captureStackTrace(this, this.constructor);
+  this.code = code;
+  this.status = 401;
+  this.inner = error;
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+
+
+</div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.express-jwt.UnauthorizedError" id="apidoc.module.express-jwt.UnauthorizedError">module express-jwt.UnauthorizedError</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.express-jwt.UnauthorizedError.UnauthorizedError" id="apidoc.element.express-jwt.UnauthorizedError.UnauthorizedError">
+        function <span class="apidocSignatureSpan">express-jwt.</span>UnauthorizedError
+        <span class="apidocSignatureSpan">(code, error)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function UnauthorizedError(code, error) {
+  this.name = &#x22;UnauthorizedError&#x22;;
+  this.message = error.message;
+  Error.call(this, error.message);
+  Error.captureStackTrace(this, this.constructor);
+  this.code = code;
+  this.status = 401;
+  this.inner = error;
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.express-jwt.UnauthorizedError.prototype" id="apidoc.module.express-jwt.UnauthorizedError.prototype">module express-jwt.UnauthorizedError.prototype</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.express-jwt.UnauthorizedError.prototype.constructor" id="apidoc.element.express-jwt.UnauthorizedError.prototype.constructor">
+        function <span class="apidocSignatureSpan">express-jwt.UnauthorizedError.prototype.</span>constructor
+        <span class="apidocSignatureSpan">(code, error)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function UnauthorizedError(code, error) {
+  this.name = &#x22;UnauthorizedError&#x22;;
+  this.message = error.message;
+  Error.call(this, error.message);
+  Error.captureStackTrace(this, this.constructor);
+  this.code = code;
+  this.status = 401;
+  this.inner = error;
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
 
 </div>
 
