@@ -1,6 +1,6 @@
 # npmdoc-express-jwt
 
-#### api documentation for  [express-jwt (v5.3.0)](https://github.com/auth0/express-jwt#readme)  [![npm package](https://img.shields.io/npm/v/npmdoc-express-jwt.svg?style=flat-square)](https://www.npmjs.org/package/npmdoc-express-jwt) [![travis-ci.org build-status](https://api.travis-ci.org/npmdoc/node-npmdoc-express-jwt.svg)](https://travis-ci.org/npmdoc/node-npmdoc-express-jwt)
+#### basic api documentation for  [express-jwt (v5.3.0)](https://github.com/auth0/express-jwt#readme)  [![npm package](https://img.shields.io/npm/v/npmdoc-express-jwt.svg?style=flat-square)](https://www.npmjs.org/package/npmdoc-express-jwt) [![travis-ci.org build-status](https://api.travis-ci.org/npmdoc/node-npmdoc-express-jwt.svg)](https://travis-ci.org/npmdoc/node-npmdoc-express-jwt)
 
 #### JWT authentication middleware.
 
@@ -97,7 +97,8 @@
     "scripts": {
         "test": "mocha --reporter spec"
     },
-    "version": "5.3.0"
+    "version": "5.3.0",
+    "bin": {}
 }
 ```
 
